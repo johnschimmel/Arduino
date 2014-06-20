@@ -26,10 +26,12 @@ import static processing.app.I18n._;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.util.Arrays;
 
 import javax.swing.*;
 import javax.swing.event.*;
-
+import javax.imageio.ImageIO;
 
 /**
  * run/stop/etc buttons for the ide
@@ -77,7 +79,7 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 
   Color bgcolor;
 
-  static Image[][] buttonImages;
+  static Image[][] buttonImages = new Image[BUTTON_COUNT][3];
   int currentRollover;
 
   JPopupMenu popup;
@@ -85,6 +87,7 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 
   int buttonCount;
   int[] state = new int[BUTTON_COUNT];
+  JButton[] stateButtons = new JButton[BUTTON_COUNT];
   Image[] stateImage;
   int which[]; // mapping indices to implementation
 
@@ -97,9 +100,10 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
   boolean shiftPressed;
 
   public EditorToolbar(Editor editor, JMenu menu) {
+
     this.editor = editor;
     this.menu = menu;
-
+    
     buttonCount = 0;
     which = new int[BUTTON_COUNT];
 
@@ -121,36 +125,118 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
     addMouseMotionListener(this);
   }
 
-  protected void loadButtons() {
-    Image allButtons = Base.getThemeImage("buttons.gif", this);
-    buttonImages = new Image[BUTTON_COUNT][3];
+  
+  public JPanel prepareToolbarButtons() {
+ 
+	Image allButtons = Base.getThemeImage("buttons.gif", this);
+	 
+	JPanel toolbarButtonPanel = new JPanel();
+	toolbarButtonPanel.setBackground(Color.RED);
+	toolbarButtonPanel.setLayout(new GridLayout(1, BUTTON_COUNT,5,1));
+	 
+	for(int i=0; i < BUTTON_COUNT; i++){
+		
+		JButton tmpButton = new JButton();
+		tmpButton.getAccessibleContext().setAccessibleName(title[i]);
+		tmpButton.getAccessibleContext().setAccessibleDescription(titleShift[i]);
+		tmpButton.setContentAreaFilled(false);
+		tmpButton.setBorderPainted(false);
+		tmpButton.setFocusPainted(false);
+		tmpButton.setSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+		
+		// default icon
+		BufferedImage bufferedImage1 = new BufferedImage(BUTTON_WIDTH, BUTTON_HEIGHT, BufferedImage.TYPE_INT_RGB);
+		bufferedImage1.getGraphics().drawImage(allButtons, -(i*BUTTON_IMAGE_SIZE) - 3,  (-2+0)*BUTTON_IMAGE_SIZE, null);
+		ImageIcon startIcon = new ImageIcon(bufferedImage1, titleShift[i]);
+		tmpButton.setIcon(startIcon);
 
-      for (int i = 0; i < BUTTON_COUNT; i++) {
-      for (int state = 0; state < 3; state++) {
-        Image image = createImage(BUTTON_WIDTH, BUTTON_HEIGHT);
-        Graphics g = image.getGraphics();
-        g.drawImage(allButtons, 
-                    -(i*BUTTON_IMAGE_SIZE) - 3, 
-                    (-2 + state)*BUTTON_IMAGE_SIZE, null);
-        buttonImages[i][state] = image;
-      }
-    }
+		// rollover icon
+		BufferedImage bufferedImage2 = new BufferedImage(BUTTON_WIDTH, BUTTON_HEIGHT, BufferedImage.TYPE_INT_RGB);
+		bufferedImage2.getGraphics().drawImage(allButtons, -(i*BUTTON_IMAGE_SIZE) - 3,  (-2+1)*BUTTON_IMAGE_SIZE, null);
+		ImageIcon rollOverIcon = new ImageIcon(bufferedImage2, titleShift[i]);
+		tmpButton.setRolloverIcon(rollOverIcon);
+		
+		// button actionListener
+		tmpButton.addMouseListener(new MouseAdapter() {
+            
+			@Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+	        	JButton actionBtn = (JButton) e.getSource();
+	        	System.out.println(actionBtn.getAccessibleContext().getAccessibleName());
+	        	
+	        	int actionIndexNum = (int) Arrays.asList(title).indexOf(actionBtn.getAccessibleContext().getAccessibleName());
+     	
+	        	if (!isEnabled())
+	      	      return;
+
+	      	    
+	      	  switch (actionIndexNum) {
+	            case RUN:
+	              editor.handleRun(false);
+	              break;
+
+	            case OPEN:
+	              popup = menu.getPopupMenu();
+	              
+	              popup.show(EditorToolbar.this, e.getX(), e.getY());
+	              popup.setVisible(true);
+	              break;
+
+	            case NEW:
+	              if (shiftPressed) {
+	                editor.base.handleNew();
+	              } else {
+	              editor.base.handleNewReplace();
+	              }
+	              break;
+
+	            case SAVE:
+	              editor.handleSave(false);
+	              break;
+
+	            case EXPORT:
+	              editor.handleExport(e.isShiftDown());
+	              break;
+
+	            case SERIAL:
+	              editor.handleSerial();
+	              break;
+	            }
+	        }
+	    });
+		toolbarButtonPanel.add(tmpButton);
+	}
+	
+
+	return toolbarButtonPanel;
+	
   }
+  
 
-  @Override
-  public void paintComponent(Graphics screen) {
+
+//@Override
+/*public void paintComponent(Graphics screen) {
+	
     // this data is shared by all EditorToolbar instances
-    if (buttonImages == null) {
+   
+	  if (buttonImages == null) {
       loadButtons();
+  
     }
 
     // this happens once per instance of EditorToolbar
     if (stateImage == null) {
+    	
       state = new int[buttonCount];
+      stateButton = new JButton[buttonCount]; // new buttons
       stateImage = new Image[buttonCount];
+      
       for (int i = 0; i < buttonCount; i++) {
         setState(i, INACTIVE, false);
+        stateButton[i] = new JButton("button#");
       }
+      
       y1 = 0;
       y2 = BUTTON_HEIGHT;
       x1 = new int[buttonCount];
@@ -176,17 +262,20 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
       x1[SERIAL] = width - BUTTON_WIDTH - 14;
       x2[SERIAL] = width - 14;
     }
+    
     Graphics g = offscreen.getGraphics();
+    
     g.setColor(bgcolor); //getBackground());
     g.fillRect(0, 0, width, height);
-
+    
     for (int i = 0; i < buttonCount; i++) {
-      g.drawImage(stateImage[i], x1[i], y1, null);
+//      g.drawImage(stateImage[i], x1[i], y1, null);
     }
 
     g.setColor(statusColor);
     g.setFont(statusFont);
-
+    
+*/
     /*
     // if i ever find the guy who wrote the java2d api, i will hurt him.
      * 
@@ -198,6 +287,8 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
     float statusX = (getSize().width - statusW) / 2;
     g2.drawString(status, statusX, statusY);
     */
+    
+/*
     if (currentRollover != -1) {
       int statusY = (BUTTON_HEIGHT + g.getFontMetrics().getAscent()) / 2;
       String status = shiftPressed ? titleShift[currentRollover] : title[currentRollover];
@@ -215,50 +306,20 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
     if (!isEnabled()) {
       screen.setColor(new Color(0,0,0,100));
       screen.fillRect(0, 0, getWidth(), getHeight());
-  }
-  }
-
-
-  public void mouseMoved(MouseEvent e) {
-    if (!isEnabled())
-      return;
-    
-    // mouse events before paint();
-    if (state == null) return;
-
-    if (state[OPEN] != INACTIVE) {
-      // avoid flicker, since there will probably be an update event
-      setState(OPEN, INACTIVE, false);
     }
-    handleMouse(e);
-  }
+ 
+  
+    
+ }*/
+
+
+  public void mouseMoved(MouseEvent e) { }
 
 
   public void mouseDragged(MouseEvent e) { }
 
 
-  public void handleMouse(MouseEvent e) {
-    int x = e.getX();
-    int y = e.getY();
-
-    if (currentRollover != -1) {
-      if ((x > x1[currentRollover]) && (y > y1) &&
-          (x < x2[currentRollover]) && (y < y2)) {
-        return;
-
-      } else {
-        setState(currentRollover, INACTIVE, true);
-        currentRollover = -1;
-      }
-    }
-    int sel = findSelection(x, y);
-    if (sel == -1) return;
-
-    if (state[sel] != ACTIVE) {
-      setState(sel, ROLLOVER, true);
-      currentRollover = sel;
-    }
-  }
+  public void handleMouse(MouseEvent e) {}
 
 
   private int findSelection(int x, int y) {
@@ -277,83 +338,15 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
   }
 
 
-  private void setState(int slot, int newState, boolean updateAfter) {
-    state[slot] = newState;
-    stateImage[slot] = buttonImages[which[slot]][newState];
-    if (updateAfter) {
-      repaint();
-    }
-  }
+  private void setState(int slot, int newState, boolean updateAfter) {}
 
 
-  public void mouseEntered(MouseEvent e) {
-    handleMouse(e);
-  }
+  public void mouseEntered(MouseEvent e) { }
 
 
-  public void mouseExited(MouseEvent e) {
-    // if the popup menu for is visible, don't register this,
-    // because the popup being set visible will fire a mouseExited() event
-    if ((popup != null) && popup.isVisible()) return;
-
-    if (state[OPEN] != INACTIVE) {
-      setState(OPEN, INACTIVE, true);
-    }
-    handleMouse(e);
-  }
+  public void mouseExited(MouseEvent e) { }
 
   int wasDown = -1;
-
-
-  public void mousePressed(MouseEvent e) {
-    
-    // jdf
-    if (!isEnabled())
-      return;
-    
-    final int x = e.getX();
-    final int y = e.getY();
-
-    int sel = findSelection(x, y);
-    ///if (sel == -1) return false;
-    if (sel == -1) return;
-    currentRollover = -1;
-
-    switch (sel) {
-    case RUN:
-      editor.handleRun(false);
-      break;
-
-//    case STOP:
-//      editor.handleStop();
-//      break;
-//
-    case OPEN:
-      popup = menu.getPopupMenu();
-      popup.show(EditorToolbar.this, x, y);
-      break;
-
-    case NEW:
-      if (shiftPressed) {
-        editor.base.handleNew();
-      } else {
-      editor.base.handleNewReplace();
-      }
-      break;
-
-    case SAVE:
-      editor.handleSave(false);
-      break;
-
-    case EXPORT:
-      editor.handleExport(e.isShiftDown());
-      break;
-
-    case SERIAL:
-      editor.handleSerial();
-      break;
-    }
-  }
 
 
   public void mouseClicked(MouseEvent e) { }
@@ -365,21 +358,13 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
   /**
    * Set a particular button to be active.
    */
-  public void activate(int what) {
-    if (buttonImages != null) {
-    setState(what, ACTIVE, true);
-  }
-  }
+  public void activate(int what) {}
 
 
   /**
    * Set a particular button to be active.
    */
-  public void deactivate(int what) {
-    if (buttonImages != null) {
-    setState(what, INACTIVE, true);
-  }
-  }
+  public void deactivate(int what) { }
 
 
   public Dimension getPreferredSize() {
