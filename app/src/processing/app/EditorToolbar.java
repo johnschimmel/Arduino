@@ -215,104 +215,6 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
   
 
 
-//@Override
-/*public void paintComponent(Graphics screen) {
-	
-    // this data is shared by all EditorToolbar instances
-   
-	  if (buttonImages == null) {
-      loadButtons();
-  
-    }
-
-    // this happens once per instance of EditorToolbar
-    if (stateImage == null) {
-    	
-      state = new int[buttonCount];
-      stateButton = new JButton[buttonCount]; // new buttons
-      stateImage = new Image[buttonCount];
-      
-      for (int i = 0; i < buttonCount; i++) {
-        setState(i, INACTIVE, false);
-        stateButton[i] = new JButton("button#");
-      }
-      
-      y1 = 0;
-      y2 = BUTTON_HEIGHT;
-      x1 = new int[buttonCount];
-      x2 = new int[buttonCount];
-    }
-
-    Dimension size = getSize();
-    if ((offscreen == null) ||
-        (size.width != width) || (size.height != height)) {
-      offscreen = createImage(size.width, size.height);
-      width = size.width;
-      height = size.height;
-
-      int offsetX = 3;
-      for (int i = 0; i < buttonCount; i++) {
-        x1[i] = offsetX;
-        if (i == 2 || i == 6) x1[i] += BUTTON_GAP;
-        x2[i] = x1[i] + BUTTON_WIDTH;
-        offsetX = x2[i];
-      }
-      
-      // Serial button must be on the right
-      x1[SERIAL] = width - BUTTON_WIDTH - 14;
-      x2[SERIAL] = width - 14;
-    }
-    
-    Graphics g = offscreen.getGraphics();
-    
-    g.setColor(bgcolor); //getBackground());
-    g.fillRect(0, 0, width, height);
-    
-    for (int i = 0; i < buttonCount; i++) {
-//      g.drawImage(stateImage[i], x1[i], y1, null);
-    }
-
-    g.setColor(statusColor);
-    g.setFont(statusFont);
-    
-*/
-    /*
-    // if i ever find the guy who wrote the java2d api, i will hurt him.
-     * 
-     * whereas I love the Java2D API. --jdf. lol.
-     * 
-    Graphics2D g2 = (Graphics2D) g;
-    FontRenderContext frc = g2.getFontRenderContext();
-    float statusW = (float) statusFont.getStringBounds(status, frc).getWidth();
-    float statusX = (getSize().width - statusW) / 2;
-    g2.drawString(status, statusX, statusY);
-    */
-    
-/*
-    if (currentRollover != -1) {
-      int statusY = (BUTTON_HEIGHT + g.getFontMetrics().getAscent()) / 2;
-      String status = shiftPressed ? titleShift[currentRollover] : title[currentRollover];
-      if (currentRollover != SERIAL)
-        g.drawString(status, (buttonCount-1) * BUTTON_WIDTH + 3 * BUTTON_GAP, statusY);
-      else {
-        int statusX = x1[SERIAL] - BUTTON_GAP;
-        statusX -= g.getFontMetrics().stringWidth(status);
-        g.drawString(status, statusX, statusY);
-      }
-    }
-
-    screen.drawImage(offscreen, 0, 0, null);
-    
-    if (!isEnabled()) {
-      screen.setColor(new Color(0,0,0,100));
-      screen.fillRect(0, 0, getWidth(), getHeight());
-    }
- 
-  
-    
- }*/
-
-
   public void mouseMoved(MouseEvent e) { }
 
 
@@ -322,20 +224,7 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
   public void handleMouse(MouseEvent e) {}
 
 
-  private int findSelection(int x, int y) {
-    // if app loads slowly and cursor is near the buttons
-    // when it comes up, the app may not have time to load
-    if ((x1 == null) || (x2 == null)) return -1;
-
-    for (int i = 0; i < buttonCount; i++) {
-      if ((y > y1) && (x > x1[i]) &&
-          (y < y2) && (x < x2[i])) {
-        //System.out.println("sel is " + i);
-        return i;
-      }
-    }
-    return -1;
-  }
+  private int findSelection(int x, int y) {}
 
 
   private void setState(int slot, int newState, boolean updateAfter) {}
