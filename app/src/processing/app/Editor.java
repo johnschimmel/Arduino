@@ -214,12 +214,17 @@ public class Editor extends JFrame implements RunnerListener {
 
 		if (toolbarMenu == null) {
 			toolbarMenu = new JMenu();
+			
+			toolbarMenu.getAccessibleContext().setAccessibleName("Arduino File Menu");
+			toolbarMenu.getAccessibleContext().setAccessibleDescription("Open existing and example Arduino files");
+			toolbarMenu.setFocusable(true);
 			base.rebuildToolbarMenu(toolbarMenu);
 		}
 		
 		toolbar = new EditorToolbar(this, toolbarMenu);
 		JPanel toolbarButtonPanel = toolbar.prepareToolbarButtons();
 		toolbar.add(toolbarButtonPanel);
+		toolbarMenu.show();
 		upper.add(toolbarButtonPanel);
 
 		header = new EditorHeader(this);

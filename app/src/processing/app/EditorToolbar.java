@@ -31,12 +31,13 @@ import java.util.Arrays;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.accessibility.AccessibleContext;
 import javax.imageio.ImageIO;
 
 /**
  * run/stop/etc buttons for the ide
  */
-public class EditorToolbar extends JComponent implements MouseInputListener, KeyListener {
+public class EditorToolbar extends JComponent implements MouseInputListener, ActionListener, KeyListener {
 
   /** Rollover titles for each button. */
   static final String title[] = {
@@ -76,7 +77,8 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 
   Image offscreen;
   int width, height;
-
+  Dimension clickLocation;
+  
   Color bgcolor;
 
   static Image[][] buttonImages = new Image[BUTTON_COUNT][3];
@@ -99,6 +101,8 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 
   boolean shiftPressed;
 
+  private AccessListener listener = new AccessListener();
+  
   public EditorToolbar(Editor editor, JMenu menu) {
 
     this.editor = editor;
@@ -122,9 +126,9 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
     statusColor = Theme.getColor("buttons.status.color");
 
     addMouseListener(this);
-    addMouseMotionListener(this);
+    
   }
-
+ 
   
   public JPanel prepareToolbarButtons() {
  
@@ -133,7 +137,8 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 	final JPanel toolbarButtonPanel = new JPanel();
 	toolbarButtonPanel.setBackground(Color.RED);
 	toolbarButtonPanel.setLayout(new GridLayout(1, BUTTON_COUNT,5,1));
-	 
+	
+	
 	for(int i=0; i < BUTTON_COUNT; i++){
 		
 		JButton tmpButton = new JButton();
@@ -156,56 +161,59 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 		ImageIcon rollOverIcon = new ImageIcon(bufferedImage2, titleShift[i]);
 		tmpButton.setRolloverIcon(rollOverIcon);
 		
-		// button actionListener
-		tmpButton.addMouseListener(new MouseAdapter() {
-            
-			@Override
-            public void mousePressed(MouseEvent e) {
-                super.mousePressed(e);
-	        	JButton actionBtn = (JButton) e.getSource();
-	        	System.out.println(actionBtn.getAccessibleContext().getAccessibleName());
-	        	
-	        	int actionIndexNum = (int) Arrays.asList(title).indexOf(actionBtn.getAccessibleContext().getAccessibleName());
-     	
-	        	if (!isEnabled())
-	      	      return;
+		tmpButton.addFocusListener(listener);
+		
+		tmpButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) { 
+				JButton actionBtn = (JButton) e.getSource();
+//			  	System.out.println(actionBtn.getAccessibleContext().getAccessibleName());
+			  	
+				// get index of title string from array - use in switch case for command to run
+			  	int actionIndexNum = (int) Arrays.asList(title).indexOf(actionBtn.getAccessibleContext().getAccessibleName());
+			  	
+			  	if (!isEnabled())
+				      return;
+			  	
+			  	switch (actionIndexNum) {
+			    case RUN:
+			    	System.out.println(actionBtn.getAccessibleContext().getAccessibleAction().getClass().getName());
 
-	        	final int x = e.getX();
-	        	final int y = e.getY();
-	      	  
-	        	switch (actionIndexNum) {
-	            case RUN:
-	              editor.handleRun(false);
-	              break;
+			    	editor.handleRun(false);
+			    	break;
+			    case OPEN:
+			    	menu.setFocusable(true);
+			    	menu.getAccessibleContext().setAccessibleParent(actionBtn);
+			    	popup = menu.getPopupMenu();
+			    	popup.setVisible(true);
+			    	popup.requestFocus();
+			        popup.show(toolbarButtonPanel, actionBtn.getX(),actionBtn.getY());
+			        
+			        
+			        break;
 
-	            case OPEN:
-	              popup = menu.getPopupMenu();
-	              popup.setVisible(true);
-	              popup.show(toolbarButtonPanel, x+actionBtn.getX(),y);
-	              
-	              break;
+		        case NEW:
+		           if (shiftPressed) {
+		             editor.base.handleNew();
+		           } else {
+		         	editor.base.handleNewReplace();
+		           }
+		           break;
+	
+		         case SAVE:
+		           editor.handleSave(false);
+		           break;
+	
+		         case EXPORT:
+		           editor.handleExport(shiftPressed); //(e.isShiftDown());
+		           break;
+	
+		         case SERIAL:
+		           editor.handleSerial();
+		           break;
+			  	}
+			  	
+			  }
 
-	            case NEW:
-	              if (shiftPressed) {
-	                editor.base.handleNew();
-	              } else {
-	            	editor.base.handleNewReplace();
-	              }
-	              break;
-
-	            case SAVE:
-	              editor.handleSave(false);
-	              break;
-
-	            case EXPORT:
-	              editor.handleExport(e.isShiftDown());
-	              break;
-
-	            case SERIAL:
-	              editor.handleSerial();
-	              break;
-	            }
-	        }
 	    });
 		toolbarButtonPanel.add(tmpButton);
 	}
@@ -214,7 +222,6 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 	
   }
   
-
 
   public void mouseMoved(MouseEvent e) { }
 
@@ -288,4 +295,28 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 
 
   public void keyTyped(KeyEvent e) { }
+}
+
+
+//A focus listener. A real L&F would want to do a lot more.
+class AccessListener extends FocusAdapter {
+
+ // We print some accessibility info when we get focus.
+ public void focusGained(FocusEvent ev) {
+   JButton b = (JButton)ev.getComponent();
+   AccessibleContext access = b.getAccessibleContext();
+   System.out.print("Focus gained by a ");
+   System.out.print(access.getAccessibleRole().toDisplayString());
+   System.out.print(" named ");
+   System.out.println(access.getAccessibleName());
+   System.out.print("Description: ");
+   System.out.println(access.getAccessibleDescription());
+ }
+
+ // We print some accessibility info when we lose focus.
+ public void focusLost(FocusEvent ev) {
+   JButton b = (JButton)ev.getComponent();
+   AccessibleContext access = b.getAccessibleContext();
+   System.out.println("Focus leaving " + access.getAccessibleName());
+ }
 }
