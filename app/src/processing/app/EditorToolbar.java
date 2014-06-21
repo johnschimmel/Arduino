@@ -130,7 +130,7 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
  
 	Image allButtons = Base.getThemeImage("buttons.gif", this);
 	 
-	JPanel toolbarButtonPanel = new JPanel();
+	final JPanel toolbarButtonPanel = new JPanel();
 	toolbarButtonPanel.setBackground(Color.RED);
 	toolbarButtonPanel.setLayout(new GridLayout(1, BUTTON_COUNT,5,1));
 	 
@@ -142,17 +142,17 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 		tmpButton.setContentAreaFilled(false);
 		tmpButton.setBorderPainted(false);
 		tmpButton.setFocusPainted(false);
-		tmpButton.setSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
+		tmpButton.setPreferredSize(new Dimension(BUTTON_WIDTH, BUTTON_HEIGHT));
 		
 		// default icon
 		BufferedImage bufferedImage1 = new BufferedImage(BUTTON_WIDTH, BUTTON_HEIGHT, BufferedImage.TYPE_INT_RGB);
-		bufferedImage1.getGraphics().drawImage(allButtons, -(i*BUTTON_IMAGE_SIZE) - 3,  (-2+0)*BUTTON_IMAGE_SIZE, null);
+		bufferedImage1.getGraphics().drawImage(allButtons, -(i*BUTTON_IMAGE_SIZE) - 3,  (-2+INACTIVE)*BUTTON_IMAGE_SIZE, null);
 		ImageIcon startIcon = new ImageIcon(bufferedImage1, titleShift[i]);
 		tmpButton.setIcon(startIcon);
 
 		// rollover icon
 		BufferedImage bufferedImage2 = new BufferedImage(BUTTON_WIDTH, BUTTON_HEIGHT, BufferedImage.TYPE_INT_RGB);
-		bufferedImage2.getGraphics().drawImage(allButtons, -(i*BUTTON_IMAGE_SIZE) - 3,  (-2+1)*BUTTON_IMAGE_SIZE, null);
+		bufferedImage2.getGraphics().drawImage(allButtons, -(i*BUTTON_IMAGE_SIZE) - 3,  (-2+ROLLOVER)*BUTTON_IMAGE_SIZE, null);
 		ImageIcon rollOverIcon = new ImageIcon(bufferedImage2, titleShift[i]);
 		tmpButton.setRolloverIcon(rollOverIcon);
 		
@@ -160,8 +160,8 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 		tmpButton.addMouseListener(new MouseAdapter() {
             
 			@Override
-            public void mouseClicked(MouseEvent e) {
-                super.mouseClicked(e);
+            public void mousePressed(MouseEvent e) {
+                super.mousePressed(e);
 	        	JButton actionBtn = (JButton) e.getSource();
 	        	System.out.println(actionBtn.getAccessibleContext().getAccessibleName());
 	        	
@@ -170,24 +170,26 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 	        	if (!isEnabled())
 	      	      return;
 
-	      	    
-	      	  switch (actionIndexNum) {
+	        	final int x = e.getX();
+	        	final int y = e.getY();
+	      	  
+	        	switch (actionIndexNum) {
 	            case RUN:
 	              editor.handleRun(false);
 	              break;
 
 	            case OPEN:
 	              popup = menu.getPopupMenu();
-	              
-	              popup.show(EditorToolbar.this, e.getX(), e.getY());
 	              popup.setVisible(true);
+	              popup.show(toolbarButtonPanel, x+actionBtn.getX(),y);
+	              
 	              break;
 
 	            case NEW:
 	              if (shiftPressed) {
 	                editor.base.handleNew();
 	              } else {
-	              editor.base.handleNewReplace();
+	            	editor.base.handleNewReplace();
 	              }
 	              break;
 
@@ -208,7 +210,6 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
 		toolbarButtonPanel.add(tmpButton);
 	}
 	
-
 	return toolbarButtonPanel;
 	
   }
@@ -224,16 +225,15 @@ public class EditorToolbar extends JComponent implements MouseInputListener, Key
   public void handleMouse(MouseEvent e) {}
 
 
-  private int findSelection(int x, int y) {}
-
-
   private void setState(int slot, int newState, boolean updateAfter) {}
 
 
   public void mouseEntered(MouseEvent e) { }
 
 
-  public void mouseExited(MouseEvent e) { }
+  public void mouseExited(MouseEvent e) {
+	  if ((popup != null) && popup.isVisible()) return;
+  }
 
   int wasDown = -1;
 
